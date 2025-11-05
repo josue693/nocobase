@@ -1,80 +1,68 @@
 version: "3"
 networks:
-  nocobase:
-    driver: bridge
+  dokploy-network:
+    external: true
 services:
   verdaccio:
     image: verdaccio/verdaccio
     networks:
-      - nocobase
+      - dokploy-network
     environment:
       VERDACCIO_PORT: ${VERDACCIO_PORT}
-    restart: always
+    restart: unless-stopped
     ports:
       - "${VERDACCIO_PORT}:${VERDACCIO_PORT}"
-  mysql:
-    image: mysql:8
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-    restart: always
-    ports:
-      - "${DB_MYSQL_PORT}:3306"
-    networks:
-      - nocobase
-  kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
-    platform: linux/amd64
-    restart: always
-    privileged: true
-    networks:
-      - nocobase
-    ports:
-      - "${DB_KINGBASE_PORT}:54321"
-    environment:
-      ENABLE_CI: no
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_MODE: pg
-      NEED_START: yes
-    command: ["/usr/sbin/init"]
-    volumes:
-      - ./storage/db/kingbase:/home/kingbase/userdata
   postgres:
-    image: postgres:latest
-    restart: always
+    image: postgres:16
+    restart: unless-stopped
     networks:
-      - nocobase
+      - dokploy-network
     command: postgres -c wal_level=logical
-    ports:
-      - "${DB_POSTGRES_PORT}:5432"
     volumes:
-      - ./storage/db/postgres/backups:/backups
+      - ../files/nocobase/db:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
   adminer:
     image: nocobase/adminer
-    restart: always
+    restart: unless-stopped
     networks:
-      - nocobase
+      - dokploy-network
     ports:
       - ${ADMINER_PORT}:8080
     volumes:
       - ./:/var/www/app
   nocobase:
-    image: node:16-stretch-slim
+    image: nocobase/nocobase:2.0.0-alpha.32-full
+    depends_on:
+      - postgres
     networks:
-      - nocobase
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fkd-operacoes.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.fkd-operacoes.entrypoints=websecure"
+      - "traefik.http.routers.fkd-operacoes.tls.certResolver=letsencrypt"
+      - "traefik.http.services.fkd-operacoes.loadbalancer.server.port=80"
+    restart: unless-stopped
     command: [ "yarn", "start" ]
     working_dir: /app
-    env_file: ./.env
+    environment:
+      - APP_KEY=${APP_KEY}
+      - ENCRYPTION_FIELD_KEY=${ENCRYPTION_KEY}
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_DATABASE=nocobase
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=America/Sao_Paulo
+      - INIT_ROOT_EMAIL=${ADMIN_EMAIL}
+      - INIT_ROOT_PASSWORD=${ADMIN_PASSWORD}
+      - INIT_ROOT_NICKNAME=${ADMIN_NAME}
+      - INIT_ROOT_USERNAME=${ADMIN_USERNAME}
     volumes:
-      - ./:/app
-    expose:
-      - ${APP_PORT}
+      - ../files/nocobase/storage:/app/nocobase/storage
+      - ./public:/app/nocobase/public
     ports:
-      - "${APP_PORT}:${APP_PORT}"
+      - 80
