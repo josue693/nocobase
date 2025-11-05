@@ -47,7 +47,6 @@ services:
       - "traefik.http.services.fkd-operacoes.loadbalancer.server.port=80"
     restart: unless-stopped
     command: [ "yarn", "start" ]
-    working_dir: /app
     environment:
       - APP_KEY=${APP_KEY}
       - ENCRYPTION_FIELD_KEY=${ENCRYPTION_KEY}
