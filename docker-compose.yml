@@ -19,7 +19,7 @@ services:
       - dokploy-network
     command: postgres -c wal_level=logical
     volumes:
-      - ../files/nocobase/db:/var/lib/postgresql/data
+      - ../files/nocobase/db-reset:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
@@ -34,7 +34,7 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    image: nocobase/nocobase:2.0.0-alpha.36-full
+    image: nocobase/nocobase:2.0.0-alpha.37-full
     depends_on:
       - postgres
     networks:
