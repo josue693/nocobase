@@ -60,7 +60,7 @@ services:
       - INIT_ROOT_NICKNAME=${ADMIN_NAME}
       - INIT_ROOT_USERNAME=${ADMIN_USERNAME}
     volumes:
-      - ../files/nocobase/storage:/app/nocobase/storage
-      - ./public:/app/nocobase/public
+      - ../files/nocobase/storage-reset:/app/nocobase/storage
+      - ./public-reset:/app/nocobase/public
     ports:
       - 80
