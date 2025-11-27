@@ -34,7 +34,7 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    image: nocobase/nocobase:2.0.0-alpha.45-full
+    image: nocobase/nocobase:2.0.0-alpha.47-full
     depends_on:
       - postgres
     networks:
